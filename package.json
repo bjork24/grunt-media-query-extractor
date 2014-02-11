@@ -1,5 +1,5 @@
 {
-  "name": "https://github.com/bjork24/grunt-media-query-extractor",
+  "name": "grunt-media-query-extractor",
   "description": "Combine and extract media queries for mobile-first responsive design",
   "version": "0.1.0",
   "homepage": "https://github.com/bjork24/grunt-media-query-extractor",
