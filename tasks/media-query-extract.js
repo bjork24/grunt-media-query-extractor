@@ -12,106 +12,88 @@
 
   grunt.registerMultiTask('mqe', 'Combine and extract media queries for mobile-first responsive design', function() {
 
-    // Require stuff
     var parseCss = require('css-parse');
     var path = require('path');
     var error = true;
     
-    // Default options
     var options = this.options({
-      log: false,
-      ext: false 
+      log: true
     });
     
-    // Log info only when 'options.log' is set to true
     var log = function(message){
       if (options.log){
         grunt.log.writeln(message);
       }
     };
     
-    // Process comments
-    var processComment = function(comment) {
-      var strCss = '/*' + comment.comment + '*/';
-      return strCss;
-    };
-    
-    // Process declaration
-    var processDeclaration = function(declaration) {
-      var strCss = declaration.property + ': ' + declaration.value + ';';
-      return strCss;
-    };
-    
-    // Check declarations type
-    var commentOrDeclaration = function(declarations) {
-      var strCss = '';
-      if(declarations.type === 'declaration'){
-        strCss += '\n\t' + processDeclaration(declarations);
-      } else if(declarations.type === 'comment'){
-        strCss += ' ' + processComment(declarations);
-      }
-      return strCss;
-    };
-    
-    // Process normal CSS rule
-    var processRule = function(rule) {
-      var strCss = '';
-      strCss += rule.selectors.join(',\n') + ' {';
-      rule.declarations.forEach(function (rules) {
-        strCss += commentOrDeclaration(rules);
-      });
-      strCss += '\n}\n\n';
-      return strCss;
-    };
-    
-    // Check rule type
-    var commentOrRule = function(rule) {
-      var strCss = '';
-      if (rule.type === 'rule') {
-        strCss += processRule(rule);  
-      } else if (rule.type === 'comment') {
-        strCss += processComment(rule) + '\n\n';
-      }
-      return strCss;
-    };
-    
-    // Check keyframe type
-    var commentOrKeyframe = function(frame){
-      var strCss = '';
-      if (frame.type === 'keyframe'){
-        strCss += frame.values.join(',') + ' {';
-        frame.declarations.forEach(function (declaration) {
-          strCss += commentOrDeclaration(declaration);
+    var process = {
+      comment : function(comment) {
+        var commentStr = '/*' + comment.comment + '*/';
+        return commentStr + '\n';
+      },
+      declaration : function(declaration) {
+        var declarationStr = declaration.property + ': ' + declaration.value + ';';
+        return declarationStr;
+      },
+      media : function(media) {
+        var mediaStr = '';
+        mediaStr += '@media ' + media.rule + ' {\n\n';
+        media.rules.forEach(function(rule) {
+          mediaStr += process.commentOrRule(rule);
         });
-        strCss += '\n}\n\n';
-      } else if (frame.type === 'comment'){
-        strCss += processComment(frame) + '\n\n';
+        mediaStr += '}\n\n';
+        log('@media ' + media.rule + ' - ' + media.rules.length + ' rules');
+        return mediaStr;
+      },
+      keyframes : function(key) {
+        var keyframeStr = '';
+        keyframeStr += '@' + (typeof key.vendor !=='undefined'? key.vendor: '') + 'keyframes ' + key.name + ' {\n\n';
+        key.keyframes.forEach(function(keyframe) {
+          keyframeStr += process.commentOrKeyframe(keyframe);
+        });
+        keyframeStr += '}\n\n';
+        return keyframeStr;
+      },
+      rule : function(rule) {
+        var ruleStr = '';
+        ruleStr += rule.selectors.join(',\n') + ' {';
+        rule.declarations.forEach(function(rules) {
+          ruleStr += process.commentOrDeclaration(rules);
+        });
+        ruleStr += '\n}\n\n';
+        return ruleStr;
+      },
+      commentOrDeclaration : function(declarations) {
+        var strCss = '';
+        if( declarations.type === 'declaration' ){
+          strCss += '\n\t' + process.declaration(declarations);
+        } else if( declarations.type === 'comment' ){
+          strCss += process.comment(declarations);
+        }
+        return strCss;
+      },
+      commentOrRule : function(rule) {
+        var strCss = '';
+        if ( rule.type === 'rule' ) {
+          strCss += process.rule(rule);  
+        } else if ( rule.type === 'comment' ) {
+          strCss += process.comment(rule);
+        }
+        return strCss;
+      },
+      commentOrKeyframe : function(frame) {
+        var strCss = '';
+        if ( frame.type === 'keyframe' ) {
+          strCss += frame.values.join(',') + ' {';
+          frame.declarations.forEach(function (declaration) {
+            strCss += process.commentOrDeclaration(declaration);
+          });
+          strCss += '\n}\n\n';
+        } else if ( frame.type === 'comment' ){
+          strCss += process.comment(frame);
+        }
+        return strCss;
       }
-      return strCss;
-    };
-    
-    // Process media queries
-    var processMedia = function(media) {
-      var strCss = '';
-      strCss += '@media ' + media.rule + ' {\n\n';
-      media.rules.forEach(function (rule) {
-        strCss += commentOrRule(rule);
-      });
-      strCss += '}\n\n';
-      log('@media ' + media.rule + ' - ' + media.rules.length + ' rules');
-      return strCss;
-    };
-    
-    // Process keyframes
-    var processKeyframes = function(key) {
-      var strCss = '';
-      strCss += '@' + (typeof key.vendor !=='undefined'? key.vendor: '') + 'keyframes ' + key.name + ' {\n\n';
-      key.keyframes.forEach(function (keyframe) {
-        strCss += commentOrKeyframe(keyframe);
-      });
-      strCss += '}\n\n';
-      
-      return strCss;
     };
 
     this.files.forEach(function(f) {
@@ -125,7 +107,7 @@
         var destpath = f.dest;
         var filename = filepath.replace(/(.*)\//gi, '');
 
-        if (destpath.indexOf(filename) === -1) {
+        if ( destpath.indexOf(filename) === -1 ) {
           destpath = path.join(f.dest, filename);
         }
 
@@ -142,7 +124,6 @@
         processedCSS.media.blank = [];
         processedCSS.keyframes = [];
         
-        // For every rule in the stylesheet...
         cssJson.stylesheet.rules.forEach( function (rule) {
 
           // if the rule is a media query...
@@ -204,7 +185,7 @@
         // Function to output base CSS
         var outputBase = function(base, callback){
           base.forEach(function (rule) {
-            baseStyles += commentOrRule(rule);
+            baseStyles += process.commentOrRule(rule);
           });
           callback();
         };
@@ -213,7 +194,7 @@
         var outputMedia = function(media){
           media.forEach(function(item){
             var mediaStyles = '';
-            mediaStyles += processMedia(item);
+            mediaStyles += process.media(item);
             var mediaFile = destpath.replace('.css','-' + item.val + '.css');
             mediaStyles = grunt.util.normalizelf(mediaStyles);
             grunt.file.write(mediaFile, mediaStyles);
@@ -224,7 +205,7 @@
         // Function to output keyframes
         var outputKeyFrames = function(keyframes, callback){
           keyframes.forEach(function (keyframe) {
-            keyframeStyles += processKeyframes(keyframe);
+            keyframeStyles += process.keyframes(keyframe);
           });
           callback();
         };
@@ -261,7 +242,7 @@
 
       });
 
-      if(error){
+      if ( error ) {
         grunt.fatal('No files found');
       }
 

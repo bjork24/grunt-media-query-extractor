@@ -20,10 +20,6 @@
     clean: {
       tests: ['tmp']
     },
-    'jsbeautifier': {
-      files : ['tasks/media-query-extractor.js'],
-      options : {}
-    },
     mqe: {
       options: {
         log: true
