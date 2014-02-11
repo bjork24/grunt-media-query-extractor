@@ -85,5 +85,8 @@ grunt.initConfig({
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
+## Acknowledgements
+grunt-media-query-extractor is inspired by [grunt-combine-media-queries](https://github.com/buildingblocks/grunt-combine-media-queries) by [Building Blocks](https://github.com/buildingblocks)
+
 ## Release History
 _(Nothing yet)_
