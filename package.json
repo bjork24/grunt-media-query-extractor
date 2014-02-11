@@ -30,7 +30,9 @@
     "grunt-contrib-jshint": "~0.6.0",
     "grunt-contrib-clean": "~0.4.0",
     "grunt": "~0.4.2",
-    "css-parse": "~1.5.0"
+    "css-parse": "~1.5.0",
+    "grunt-jsbeautifier": "~0.2.6",
+    "load-grunt-tasks": "~0.3.0"
   },
   "peerDependencies": {
     "grunt": "~0.4.2"

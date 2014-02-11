@@ -1,8 +1,8 @@
 /*
- * grunt-combine-media-queries
- * https://github.com/buildingblocks/grunt-combine-media-queries
+ * grunt-media-query-extractor
+ * https://github.com/bjork24/grunt-media-query-extractor
  *
- * Copyright (c) 2013 John Cashmore
+ * Copyright (c) 2014 Dan Chilton
  * Licensed under the MIT license.
  */
 
@@ -261,12 +261,12 @@
 
       });
 
-if(error){
-  grunt.fatal('No files found');
-}
+      if(error){
+        grunt.fatal('No files found');
+      }
 
-});
+    });
 
-});
+  });
 
 };

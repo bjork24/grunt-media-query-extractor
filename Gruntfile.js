@@ -6,9 +6,9 @@
  * Licensed under the MIT license.
  */
 
-'use strict';
+ 'use strict';
 
-module.exports = function(grunt) {
+ module.exports = function(grunt) {
 
   grunt.initConfig({
     jshint: {
@@ -20,20 +20,29 @@ module.exports = function(grunt) {
     clean: {
       tests: ['tmp']
     },
+    'jsbeautifier': {
+      files : ['tasks/media-query-extractor.js'],
+      options : {}
+    },
     mqe: {
       options: {
         log: true
       },
-      your_target: {
+      // your_target: {
+      //   files: {
+      //     'tmp': ['test/test3.css']
+      //   }
+      // },
+      // dynamic: {
+      //   expand: true,
+      //   cwd: 'test/',
+      //   src: ['test6.css'],
+      //   dest: 'tmp/'
+      // }
+      test: {
         files: {
-          'tmp': ['test/test3.css']
+          'tmp': ['test/styles.css']
         }
-      },
-      dynamic: {
-        expand: true,
-        cwd: 'test/',
-        src: ['test6.css'],
-        dest: 'tmp/'
       }
     }
 
@@ -41,8 +50,7 @@ module.exports = function(grunt) {
 
   grunt.loadTasks('tasks');
 
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-clean');
+  require('load-grunt-tasks')(grunt);
 
   grunt.registerTask('default', ['clean', 'jshint', 'mqe']);
 
