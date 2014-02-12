@@ -17,8 +17,7 @@ module.exports = function(grunt) {
     var error = true;
 
     var options = this.options({
-      log: true,
-      hideComments: true
+      log: true
     });
 
     var log = function(message){
@@ -28,23 +27,6 @@ module.exports = function(grunt) {
     };
 
     var process = {
-      style : function(style) {
-        var styleStr = '';
-        switch(style.type) {
-          case 'rule':
-            styleStr += process.rule(style);
-            break;
-          case 'declaration':
-            styleStr += '\n\t' + process.declaration(style);
-            break;
-          case 'comment':
-            if(!options.hideComments) {
-              styleStr += process.comment(style);
-            }
-            break;
-        }
-        return styleStr;
-      },
       comment : function(comment) {
         var commentStr = '/*' + comment.comment + '*/';
         return commentStr + '\n';
@@ -57,23 +39,60 @@ module.exports = function(grunt) {
         var mediaStr = '';
         mediaStr += '@media ' + media.rule + ' {\n\n';
         media.rules.forEach(function(rule) {
-          mediaStr += process.style(rule);
+          mediaStr += process.commentOrRule(rule);
         });
         mediaStr += '}\n\n';
         log('@media ' + media.rule + ' - ' + media.rules.length + ' rules');
         return mediaStr;
       },
+      keyframes : function(key) {
+        var keyframeStr = '';
+        keyframeStr += '@' + (typeof key.vendor !=='undefined'? key.vendor: '') + 'keyframes ' + key.name + ' {\n\n';
+        key.keyframes.forEach(function(keyframe) {
+          keyframeStr += process.commentOrKeyframe(keyframe);
+        });
+        keyframeStr += '}\n\n';
+        return keyframeStr;
+      },
       rule : function(rule) {
         var ruleStr = '';
         ruleStr += rule.selectors.join(',\n') + ' {';
         rule.declarations.forEach(function(rules) {
-          ruleStr += process.style(rules);
+          ruleStr += process.commentOrDeclaration(rules);
         });
         ruleStr += '\n}\n\n';
         return ruleStr;
       },
-      mediaQueryId : function(mq) {
-        return mq.replace('(','').replace(')','').replace(' ','').replace(':','-');
+      commentOrDeclaration : function(declarations) {
+        var strCss = '';
+        if( declarations.type === 'declaration' ){
+          strCss += '\n\t' + process.declaration(declarations);
+        } else if( declarations.type === 'comment' ){
+          strCss += process.comment(declarations);
+        }
+        return strCss;
+      },
+      commentOrRule : function(rule) {
+        var strCss = '';
+        if ( rule.type === 'rule' ) {
+          strCss += process.rule(rule);  
+        } else if ( rule.type === 'comment' ) {
+          strCss += process.comment(rule);
+        }
+        return strCss;
+      },
+      commentOrKeyframe : function(frame) {
+        var strCss = '';
+        if ( frame.type === 'keyframe' ) {
+          strCss += frame.values.join(',') + ' {';
+          frame.declarations.forEach(function (declaration) {
+            strCss += process.commentOrDeclaration(declaration);
+          });
+          strCss += '\n}\n\n';
+        } else if ( frame.type === 'comment' ){
+          strCss += process.comment(frame);
+        }
+        return strCss;
       }
     };
 
@@ -97,15 +116,17 @@ module.exports = function(grunt) {
 
         var strStyles = '';
         var baseStyles = '';
+        var keyframeStyles = '';
         var processedCSS = {
           base : [],
           media : [],
+          keyframes : []
         };
 
         var output = {
           base : function(base, callback){
             base.forEach(function (rule) {
-              baseStyles += process.style(rule);
+              baseStyles += process.commentOrRule(rule);
             });
             callback();
           },
@@ -115,6 +136,12 @@ module.exports = function(grunt) {
               mediaStyles += process.media(item);
               output.writeToFile(item.val, mediaStyles);
             });
+          },
+          keyframes : function(keyframes, callback){
+            keyframes.forEach(function (keyframe) {
+              keyframeStyles += process.keyframes(keyframe);
+            });
+            callback();
           },
           writeToFile : function(appendToFileName, stylesToWrite){
             var file = destpath.replace('.css','-' + appendToFileName + '.css');
@@ -126,10 +153,13 @@ module.exports = function(grunt) {
 
         cssJson.stylesheet.rules.forEach(function(rule) {
 
+          // media, rule, comment, keyframe = rule.type
+
+          // if the rule is a media query...
           if (rule.type === 'media') {
 
             // Create 'id' based on the query (stripped from spaces and dashes etc.)
-            var strMedia = process.mediaQueryId(rule.media);
+            var strMedia = rule.media.replace('(','').replace(')','').replace(' ','').replace(':','-');
 
             // Create an array with all the media queries with the same 'id'
             var item = processedCSS.media.filter(function (element) {
@@ -159,6 +189,8 @@ module.exports = function(grunt) {
               }              
             });
 
+          } else if (rule.type === 'keyframes') {
+            processedCSS.keyframes.push(rule); 
           } else if (rule.type === 'rule' || 'comment') {
             processedCSS.base.push(rule);
           }
@@ -184,14 +216,21 @@ module.exports = function(grunt) {
           log('');
         }
 
+        // Check if keyframes were processed and print them               
+        if (processedCSS.keyframes.length){
+          output.keyframes(processedCSS.keyframes, function(){
+            output.writeToFile('keyframes', keyframeStyles);
+          });
+        }
+
       });
 
-      if ( error ) {
-        grunt.fatal('No files found');
-      }
+if ( error ) {
+  grunt.fatal('No files found');
+}
 
-    });
+});
 
-  });
+});
 
 };
