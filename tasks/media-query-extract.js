@@ -13,17 +13,23 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('mqe', 'Combine and extract media queries for mobile-first responsive design', function() {
 
     var parseCss = require('css-parse');
+    var _ = require('lodash');
     var path = require('path');
     var error = true;
 
     var options = this.options({
-      log: true,
-      hideComments: true
+      log: false,
+      hideComments: false,
+      breakpointCollections: false
     });
 
-    var log = function(message){
+    var log = function(message, highlight){
       if (options.log){
-        grunt.log.writeln(message);
+        if( _.isUndefined(highlight) ) {
+          grunt.log.writeln(message);
+        } else {
+          grunt.log.ok(message);
+        }
       }
     };
 
@@ -71,9 +77,22 @@ module.exports = function(grunt) {
         });
         ruleStr += '\n}\n\n';
         return ruleStr;
-      },
+      }
+    };
+
+    var helpers = {
       mediaQueryId : function(mq) {
         return mq.replace('(','').replace(')','').replace(' ','').replace(':','-');
+      },
+      writeToFile : function(appendToFileName, stylesToWrite, destpath){
+        var file = helpers.getFilePath(destpath, appendToFileName);
+        var styles = grunt.util.normalizelf(stylesToWrite);
+        grunt.file.write(file, styles);
+        log(file + ' written successfully');
+        log('');
+      },
+      getFilePath : function(destpath, appendToFileName) {
+        return destpath.replace('.css','-' + appendToFileName + '.css');
       }
     };
 
@@ -83,7 +102,7 @@ module.exports = function(grunt) {
 
         error = false;
 
-        grunt.log.ok('File ' + filepath + ' found');
+        log('File ' + filepath + ' found');
 
         var destpath = f.dest;
         var filename = filepath.replace(/(.*)\//gi, '');
@@ -95,93 +114,97 @@ module.exports = function(grunt) {
         var source = grunt.file.read(filepath);
         var cssJson = parseCss(source);
 
-        var strStyles = '';
-        var baseStyles = '';
         var processedCSS = {
           base : [],
           media : [],
         };
 
         var output = {
-          base : function(base, callback){
+          base : function(base){
+            var baseStyles = '';
             base.forEach(function (rule) {
               baseStyles += process.style(rule);
             });
-            callback();
+            helpers.writeToFile('base', baseStyles, destpath);
           },
           media : function(media){
+            log('\nProcessed media queries:', true);
             media.forEach(function(item){
               var mediaStyles = '';
               mediaStyles += process.media(item);
-              output.writeToFile(item.val, mediaStyles);
+              helpers.writeToFile(item.val, mediaStyles, destpath);
             });
-          },
-          writeToFile : function(appendToFileName, stylesToWrite){
-            var file = destpath.replace('.css','-' + appendToFileName + '.css');
-            var styles = grunt.util.normalizelf(stylesToWrite);
-            grunt.file.write(file, styles);
-            grunt.log.ok(file + ' written successfully');
+            log('');
           }
         };
 
         cssJson.stylesheet.rules.forEach(function(rule) {
 
           if (rule.type === 'media') {
-
-            // Create 'id' based on the query (stripped from spaces and dashes etc.)
-            var strMedia = process.mediaQueryId(rule.media);
-
-            // Create an array with all the media queries with the same 'id'
+            var mediaQueryId = helpers.mediaQueryId(rule.media);
             var item = processedCSS.media.filter(function (element) {
-              return (element.val === strMedia);
+              return (element.val === mediaQueryId);
             });
-
-            // If there are no media queries in the array, define details
             if (item.length < 1) {
               var mediaObj = {};
               mediaObj.sortVal = parseFloat(rule.media.match( /\d+/g ));
               mediaObj.rule = rule.media;
-              mediaObj.val = strMedia;
+              mediaObj.val = mediaQueryId;
               mediaObj.rules = [];
               processedCSS.media.push(mediaObj);
             }
-
-            // Compare the query to other queries
             var i = 0;
             processedCSS.media.forEach(function (elm) {
-              if (elm.val !== strMedia) { i++; }
+              if (elm.val !== mediaQueryId) { i++; }
             });
-
-            // Push every merged query
             rule.rules.forEach(function (mediaRule) {
               if (mediaRule.type === 'rule' || 'comment' ) {
                 processedCSS.media[i].rules.push(mediaRule); 
               }              
             });
-
           } else if (rule.type === 'rule' || 'comment') {
             processedCSS.base.push(rule);
           }
 
         });
 
-        // Sort media.minWidth queries ascending
         processedCSS.media.sort(function(a,b){
           return a.sortVal-b.sortVal;
         });
 
-        // Check if base CSS was processed and print them
         if (processedCSS.base.length){
-          output.base(processedCSS.base, function(){
-            output.writeToFile('base', baseStyles);
-          });
+          output.base(processedCSS.base);
         }
 
-        // Check if media queries were processed and print them in order     
         if (processedCSS.media.length){
-          log('\nProcessed media queries:');
           output.media(processedCSS.media);
-          log('');
+        } else {
+          error = true;
+          grunt.log.error('No media queries were found');
+        }
+
+        if (options.breakpointCollections) {
+          log('\nBuilding media query combos', true);
+          var baseCSS = grunt.file.read(helpers.getFilePath(destpath, 'base'));
+          var mediaQueryFiles = [];
+          processedCSS.media.forEach(function(mq, i) {
+            var mediaQueryRules = {
+              filename : mq.val,
+              contents : grunt.file.read(helpers.getFilePath(destpath, mq.val))
+            };
+            mediaQueryFiles.push(mediaQueryRules);
+          });
+          _.range(mediaQueryFiles.length).forEach(function(mq, i){
+            var writeStr = [baseCSS];
+            var lastFilename = '';
+            _.first(mediaQueryFiles, i+1).forEach(function(mq){
+              writeStr.push(mq.contents);
+              lastFilename = mq.filename;
+            });
+            var writeFile = 'base_' + lastFilename;
+            writeStr = writeStr.join('\n\n\n\n');
+            helpers.writeToFile(writeFile, writeStr, destpath);
+          });
         }
 
       });

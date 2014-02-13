@@ -22,7 +22,9 @@
     },
     mqe: {
       options: {
-        log: true
+        log: true,
+        hideComments: true,
+        breakpointCollections: true
       },
       // your_target: {
       //   files: {
