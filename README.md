@@ -86,4 +86,4 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 grunt-media-query-extractor is inspired by [grunt-combine-media-queries](https://github.com/buildingblocks/grunt-combine-media-queries) by [Building Blocks](https://github.com/buildingblocks)
 
 ## Release History
-_(Nothing yet)_
+* February 12, 2014 - v1.0.0 - Initial release
