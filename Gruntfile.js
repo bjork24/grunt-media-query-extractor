@@ -20,6 +20,11 @@
     clean: {
       tests: ['tmp']
     },
+    bump: {
+      options: {
+        push: false
+      }
+    },
     mqe: {
       options: {
         log: true

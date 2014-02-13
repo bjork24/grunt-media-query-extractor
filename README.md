@@ -37,49 +37,46 @@ grunt.initConfig({
 
 ### Options
 
-#### options.separator
-Type: `String`
-Default value: `',  '`
+#### log
 
-A string value that is used to do something with whatever.
+Type: `boolean`
+Default: `false`
 
-#### options.punctuation
-Type: `String`
-Default value: `'.'`
+Log processed media queries.
 
-A string value that is used to do something else with whatever else.
+#### hideComments
+
+Type: `boolean`
+Default: `false`
+
+Remove comments from processed stylesheets.
+
+#### breakpointCollections
+
+Type: `boolean`
+Default: `false`
+
+Combine extracted media queries into collections for dynamic stylesheet loading 
+based on breakpoint.
 
 ### Usage Examples
 
 #### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
-
-```js
-grunt.initConfig({
-  mqe: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
-```
-
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
+In this example, all the css files in `test` are processed and moved to the folder `tmp`
 
 ```js
 grunt.initConfig({
   mqe: {
     options: {
-      separator: ': ',
-      punctuation: ' !!!',
+      log: true
     },
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
+    your_target: {
+      files: {
+        'tmp': ['test/styles.css']
+      }
+    }
+  }
+})
 ```
 
 ## Contributing
