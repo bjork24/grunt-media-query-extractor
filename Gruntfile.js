@@ -22,21 +22,8 @@
     },
     mqe: {
       options: {
-        log: true,
-        hideComments: true,
-        breakpointCollections: true
+        log: true
       },
-      // your_target: {
-      //   files: {
-      //     'tmp': ['test/test3.css']
-      //   }
-      // },
-      // dynamic: {
-      //   expand: true,
-      //   cwd: 'test/',
-      //   src: ['test6.css'],
-      //   dest: 'tmp/'
-      // }
       test: {
         files: {
           'tmp': ['test/styles.css']
